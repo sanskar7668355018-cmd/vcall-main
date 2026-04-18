@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 import {
   Loader2,
@@ -6,7 +7,6 @@ import {
   Users,
   X,
   Send,
-  Info
 } from 'lucide-react';
 
 import {
@@ -74,7 +74,10 @@ const ParticipantsPanel = ({ onClose }) => {
   );
 };
 
-const VideoChat = ({ roomId, video, audio, user }) => {
+const livekitUrl = process.env.REACT_APP_LIVEKIT_URL;
+
+const VideoChat = ({ video, audio, user }) => {
+  const { roomId } = useParams();
   const [token, setToken] = useState("");
   const [showChat, setShowChat] = useState(false);
   const [showParticipants, setShowParticipants] = useState(false);
@@ -86,42 +89,43 @@ const VideoChat = ({ roomId, video, audio, user }) => {
 
   const navigate = useNavigate();
   //const API_URL = "https://vcall-2vlg.onrender.com";
-  const API_URL = "http://localhost:5000";
+  const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
   useEffect(() => {
-  if (!user?.name) return;
+    if (!user?.name || !roomId) return;
 
-  const authToken = localStorage.getItem("authToken");
+    const authToken = localStorage.getItem("authToken");
 
-  (async () => {
-    try {
-      const resp = await axios.get(
-        `${API_URL}/api/livekit?room=${roomId}&username=${user.name}`,
-        {
-          headers: {
-            Authorization: `Bearer ${authToken}`,
-          },
-        }
-      );
+    (async () => {
+      try {
+        //added a comma after the url string
+        const resp = await axios.get(
+          `${API_URL}/api/livekit/token?roomName=${roomId}&participantName=${user.name}`,
+          {
+            headers: {
+              Authorization: `Bearer ${authToken}`,
+            },
+          }
+        );
 
-      console.log("FULL RESPONSE:", resp.data);
-      console.log("TOKEN:", resp.data.token);
-      console.log("TYPE:", typeof resp.data.token);
+        console.log("FULL RESPONSE:", resp.data);
+        console.log("TOKEN:", resp.data.token);
+        console.log("TYPE:", typeof resp.data.token);
 
-      // ✅ FORCE STRING (CRITICAL FIX)
-      const safeToken = String(resp.data.token);
+        // ✅ FORCE STRING (CRITICAL FIX)
+        const safeToken = String(resp.data.token);
 
-      setToken(safeToken);
+        setToken(safeToken);
 
-    } catch (e) {
-      console.log("TOKEN FETCH ERROR:", e);
-    }
-  })();
-}, [user?.name, roomId]);
+      } catch (e) {
+        console.log("TOKEN FETCH ERROR:", e);
+      }
+    })();
+  }, [user?.name, roomId]);
 
   const onLeave = () => {
     navigate('/');
   };
-
+  const [recStartTime, setRecStartTime] = useState(null);
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getDisplayMedia({
@@ -144,50 +148,50 @@ const VideoChat = ({ roomId, video, audio, user }) => {
       };
 
       recorder.start(1000);
+      setRecStartTime(Date.now());
       mediaRecorderRef.current = recorder;
       setIsRecording(true);
-
     } catch (error) {
       console.log("Recording failed", error);
     }
   };
   const stopRecording = async () => {
-  if (!mediaRecorderRef.current) return;
-
-  mediaRecorderRef.current.onstop = async () => {
-    const blob = new Blob(recordedChunksRef.current, {
-      type: 'video/webm',
-    });
-
-    // 🔥 create file
-    const file = new File([blob], `meeting-${roomId}.webm`, {
-      type: 'video/webm',
-    });
-
-    const formData = new FormData();
-    formData.append("video", file);
-    formData.append("roomName", roomId);
-
-    try {
-      await axios.post("http://localhost:5000/api/recording/upload", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
+    if (!mediaRecorderRef.current) return;
+    const durationInSeconds = Math.round((Date.now() - recStartTime) / 1000);
+    mediaRecorderRef.current.onstop = async () => {
+      const blob = new Blob(recordedChunksRef.current, {
+        type: 'video/webm',
       });
 
-      alert("Recording saved to DB ✅");
-    } catch (err) {
-      console.error(err);
-    }
+      // 🔥 create file
+      const file = new File([blob], `meeting-${roomId}.webm`, {
+        type: 'video/webm',
+      });
 
-    recordedStreamRef.current?.getTracks().forEach(track =>
-      track.stop()
-    );
+      const formData = new FormData();
+      formData.append("roomName", roomId);
+      formData.append("duration", durationInSeconds);
+      formData.append("video", file);
+      try {
+        await axios.post("http://localhost:5000/api/recording/upload", formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
+
+        alert(`Recording saved to DB! Duration: ${durationInSeconds}s✅`);
+      } catch (err) {
+        console.error(err);
+      }
+
+      recordedStreamRef.current?.getTracks().forEach(track =>
+        track.stop()
+      );
+    };
+
+    mediaRecorderRef.current.stop();
+    setIsRecording(false);
   };
-
-  mediaRecorderRef.current.stop();
-  setIsRecording(false);
-};
 
   if (token === "") {
     return (
@@ -202,7 +206,7 @@ const VideoChat = ({ roomId, video, audio, user }) => {
     <div className="video-meeting-container">
       <LiveKitRoom
         data-lk-theme="default"
-        serverUrl={"wss://vcall-xble7sti.livekit.cloud"}
+        serverUrl={livekitUrl}
         token={token}
         connect={true}
         video={video}
@@ -245,24 +249,24 @@ const VideoChat = ({ roomId, video, audio, user }) => {
                 leave: true
               }}
             />
-            
+
             <button
-            style={{
-    position: "absolute",
-    bottom: "80px",
-    right: "20px",
-    zIndex: 9999,
-    background: "red",
-    color: "white",
-    padding: "10px 14px",
-    borderRadius: "10px",
-    border: "none",
-    cursor: "pointer"
-  }}
-  onClick={isRecording ? stopRecording : startRecording}
->
-  🎥 {isRecording ? "Stop" : "Record"}
-</button>
+              style={{
+                position: "absolute",
+                bottom: "80px",
+                right: "20px",
+                zIndex: 9999,
+                background: "red",
+                color: "white",
+                padding: "10px 14px",
+                borderRadius: "10px",
+                border: "none",
+                cursor: "pointer"
+              }}
+              onClick={isRecording ? stopRecording : startRecording}
+            >
+              🎥 {isRecording ? "Stop" : "Record"}
+            </button>
 
             <button
               className={`control-btn ${showChat ? 'active' : ''}`}
@@ -323,6 +327,8 @@ const ChatComponent = () => {
   const messagesEndRef = useRef(null);
   const room = useRoomContext();
   const localParticipantIdentity = room.localParticipant.identity;
+  console.log("Local user identity:", localParticipantIdentity);
+
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

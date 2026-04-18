@@ -19,14 +19,15 @@ const upload = multer({ storage });
 // 🎥 UPLOAD + SAVE
 router.post("/upload", upload.single("video"), async (req, res) => {
   try {
-    const { roomName } = req.body;
+    // ✅ Extract duration from req.body (sent from your stopRecording function)
+    const { roomName, duration } = req.body;
 
     const fileUrl = `http://localhost:5000/uploads/${req.file.filename}`;
 
     const recording = new Recording({
       roomName,
       fileUrl,
-      duration: 0,
+      duration: duration || 0, // ✅ Use the actual duration passed from frontend
     });
 
     await recording.save();
