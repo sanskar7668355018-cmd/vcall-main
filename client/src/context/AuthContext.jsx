@@ -4,7 +4,15 @@ import axios from "axios"
 const AuthContext = createContext()
 
 //const API_URL = "https://vcall-2vlg.onrender.com"
-const API_URL = "http://localhost:5000"
+// Replace the hardcoded localhost with this:
+const API_URL = process.env.REACT_APP_API_URL;
+
+// This will tell us the truth in the console
+console.log("THE API URL IS:", API_URL);
+
+if (!API_URL) {
+  console.error("ERROR: REACT_APP_API_URL is undefined! Vercel settings are wrong.");
+}
 
 const setupAxiosInterceptors = (token) => {
   if (token) {
