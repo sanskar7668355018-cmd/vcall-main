@@ -15,7 +15,7 @@ const PORT = process.env.PORT || 5000;
 // ✅ 1. CORS FIRST (VERY IMPORTANT)
 app.use(
   cors({
-    origin: "http://localhost:3000",
+    origin: ["https://vcall-main.vercel.app", "http://localhost:3000"],
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
   })
