@@ -10,6 +10,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@livekit/components-react": "^2.9.20",
+    "@livekit/components-styles": "^1.2.0",
+    "livekit-client": "^2.18.2",
+    "livekit-server-sdk": "^2.15.1",
     "multer": "^2.1.1"
   }
 }
