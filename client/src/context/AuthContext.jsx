@@ -1,26 +1,10 @@
-import { createContext, useState, useContext, useEffect } from "react"
+import { createContext, useState, useContext, useEffect, useCallback } from "react"
 import axios from "axios"
 
 const AuthContext = createContext()
-
-//const API_URL = "https://vcall-2vlg.onrender.com"
-// Replace the hardcoded localhost with this:
 const API_URL = process.env.REACT_APP_API_URL;
 
-// This will tell us the truth in the console
 console.log("THE API URL IS:", API_URL);
-
-if (!API_URL) {
-  console.error("ERROR: REACT_APP_API_URL is undefined! Vercel settings are wrong.");
-}
-
-const setupAxiosInterceptors = (token) => {
-  if (token) {
-    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-  } else {
-    delete axios.defaults.headers.common['Authorization'];
-  }
-};
 
 export const useAuth = () => useContext(AuthContext)
 
@@ -31,65 +15,116 @@ export const AuthProvider = ({ children }) => {
   const [credits, setCredits] = useState(0)
   const [token, setToken] = useState(localStorage.getItem("authToken") || null)
 
-  useEffect(() => {
-    const checkAuthStatus = async () => {
-      try {
-        if (!token) {
-          setLoading(false);
-          return;
-        }
+  // ✅ fetchCredits wrapped in useCallback to prevent it from being a dependency that causes loops
+  const fetchCredits = useCallback(async (currentToken) => {
+    const activeToken = currentToken || token;
+    if (!activeToken) return 0;
+    
+    try {
+      const res = await axios.get(`${API_URL}/api/payments/credits`, {
+        headers: { Authorization: `Bearer ${activeToken}` }
+      });
+      setCredits(res.data.credits);
+      return res.data.credits;
+    } catch (error) {
+      console.error("Error fetching credits:", error);
+      return 0;
+    }
+  }, [token]);
 
-        // ✅ FIX: Manually pass the header here to ensure it's present
-        const res = await axios.get(API_URL + "/api/auth/status", {
-          headers: { Authorization: `Bearer ${token}` }
-        })
+  // ✅ 1. EFFECT FOR INITIAL LOAD ONLY
+  // This runs once when the app starts. It stops the infinite loop.
+  useEffect(() => {
+    const initAuth = async () => {
+      const savedToken = localStorage.getItem("authToken");
+      if (!savedToken) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const res = await axios.get(`${API_URL}/api/auth/status`, {
+          headers: { Authorization: `Bearer ${savedToken}` }
+        });
 
         if (res.data.isAuthenticated) {
-          setCurrentUser(res.data.user)
-          setIsAuthenticated(true)
-          // ✅ FIX: Pass the token to fetchCredits
-          fetchCredits(token)
+          setCurrentUser(res.data.user);
+          setIsAuthenticated(true);
+          setToken(savedToken);
+          fetchCredits(savedToken);
         } else {
-          setToken(null);
+          handleLogoutLocal();
         }
       } catch (error) {
-        console.error("Authentication check failed:", error)
-        setToken(null);
+        console.error("Initial auth check failed:", error);
+        handleLogoutLocal();
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
-    checkAuthStatus()
-  }, [token])
+    };
 
-  const fetchCredits = async (currentToken) => {
+    initAuth();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty array = run once on mount only
+
+  // ✅ 2. EFFECT TO SYNC TOKEN TO LOCALSTORAGE
+  useEffect(() => {
+    if (token) {
+      localStorage.setItem("authToken", token);
+    } else {
+      localStorage.removeItem("authToken");
+    }
+  }, [token]);
+
+  const handleLogoutLocal = () => {
+    setToken(null);
+    setCurrentUser(null);
+    setIsAuthenticated(false);
+    setCredits(0);
+    localStorage.removeItem("authToken");
+  };
+
+  const login = async (email, password) => {
     try {
-      const activeToken = currentToken || token;
-      if (!activeToken) return 0;
-      const res = await axios.get(API_URL + "/api/payments/credits", {
-        headers: { Authorization: `Bearer ${activeToken}` }
-      })
-      setCredits(res.data.credits)
-      return res.data.credits
+      const res = await axios.post(`${API_URL}/api/auth/login`, { email, password });
+      const newToken = res.data.token;
+      setToken(newToken);
+      setCurrentUser(res.data.user);
+      setIsAuthenticated(true);
+      await fetchCredits(newToken);
+      return { success: true };
     } catch (error) {
-      console.error("Error fetching credits:", error)
-      return 0
+      return {
+        success: false,
+        message: error.response?.data?.message || "Login failed",
+      };
     }
-  }
+  };
 
- const deductCredits = async () => {
+  const signup = async (name, email, password) => {
     try {
-      // ✅ FIX: Get the token from state or localStorage
-      const activeToken = token || localStorage.getItem("authToken");
+      const res = await axios.post(`${API_URL}/api/auth/signup`, { name, email, password });
+      const newToken = res.data.token;
+      setToken(newToken);
+      setCurrentUser(res.data.user);
+      setIsAuthenticated(true);
+      await fetchCredits(newToken);
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || "Signup failed",
+      };
+    }
+  };
 
-      if (!activeToken) {
-        return { success: false, message: "No token, authorization denied" };
-      }
+  const deductCredits = async () => {
+    const activeToken = token || localStorage.getItem("authToken");
+    if (!activeToken) return { success: false, message: "No token found" };
 
-      const res = await axios.post(API_URL + "/api/payments/deduct", {}, {
-        headers: {
-          Authorization: `Bearer ${activeToken}` // ✅ Manually add the token here
-        }
+    try {
+      const res = await axios.post(`${API_URL}/api/payments/deduct`, {}, {
+        headers: { Authorization: `Bearer ${activeToken}` }
       });
 
       if (res.data.success) {
@@ -98,71 +133,19 @@ export const AuthProvider = ({ children }) => {
       }
       return { success: false, message: res.data.message };
     } catch (error) {
-      console.error("Deduct credits error:", error);
-      return {
-        success: false,
-        message: error.response?.data?.message || "Failed to deduct credits"
-      };
+      return { success: false, message: "Deduction failed" };
     }
   };
-
-  const hasEnoughCredits = () => {
-    return credits > 0
-  }
-
-  const login = async (email, password) => {
-    try {
-      const res = await axios.post(API_URL + "/api/auth/login", { email, password });
-      const newToken = res.data.token; // Get the token from response
-      setToken(newToken); 
-      setCurrentUser(res.data.user);
-      setIsAuthenticated(true);
-      await fetchCredits(newToken);
-      return { success: true }
-    } catch (error) {
-      return {
-        success: false,
-        message: error.response?.data?.message || "Login failed",
-      }
-    }
-  };
-
-  const signup = async (name, email, password) => {
-  try {
-    const res = await axios.post(API_URL + "/api/auth/signup", { name, email, password });
-    
-    // 1. Extract the token immediately
-    const newToken = res.data.token; 
-    
-    // 2. Update state
-    setToken(newToken);
-    setCurrentUser(res.data.user);
-    setIsAuthenticated(true);
-    
-    // 3. Pass the NEW token directly to fetchCredits to avoid 401
-    await fetchCredits(newToken); 
-    
-    return { success: true };
-  } catch (error) {
-    return {
-      success: false,
-      message: error.response?.data?.message || "Signup failed",
-    };
-  }
-};
 
   const logout = async () => {
     try {
-      await axios.post(API_URL + "/api/auth/logout", {})
-      setToken(null)
-      setCurrentUser(null)
-      setIsAuthenticated(false)
-      setCredits(0)
-      return { success: true }
-    } catch (error) {
-      return { success: false, message: "Logout failed" }
+      await axios.post(`${API_URL}/api/auth/logout`, {});
+    } catch (err) {
+      console.error("Logout request failed", err);
+    } finally {
+      handleLogoutLocal();
     }
-  }
+  };
 
   const value = {
     currentUser,
@@ -174,7 +157,7 @@ export const AuthProvider = ({ children }) => {
     logout,
     fetchCredits,
     deductCredits,
-    hasEnoughCredits
+    hasEnoughCredits: () => credits > 0
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
