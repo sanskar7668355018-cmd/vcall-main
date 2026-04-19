@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate, useParams } from 'react-router-dom';
-import { X, MessageSquare, Users, Video } from 'lucide-react'; // Ensure 'Video' is here
 import {
   Loader2,
   MessageSquare,
   Users,
   X,
   Send,
+  Video,
 } from 'lucide-react';
 
 import {

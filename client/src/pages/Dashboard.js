@@ -19,7 +19,6 @@ const Dashboard = () => {
   const { currentUser, hasEnoughCredits, deductCredits, credits, fetchCredits } = useAuth();
   const navigate = useNavigate();
   const [roomId, setRoomId] = useState('');
-  const [isInCall, setIsInCall] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [messages, setMessages] = useState([]);
