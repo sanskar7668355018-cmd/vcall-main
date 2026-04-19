@@ -56,28 +56,28 @@ const Dashboard = () => {
     return Math.random().toString(36).substring(2, 8).toUpperCase();
   };
 
-  const createMeeting = async () => {
-    if (!hasEnoughCredits()) {
-      setError('You do not have enough credits to create a meeting.');
-      return;
-    }
+ const createMeeting = async () => {
+  // ... existing code ...
+  try {
+    const result = await deductCredits();
 
-    try {
-      const result = await deductCredits();
-
-      if (result.success) {
-        const newRoomId = generateMeetingId();
-        setIsCreatingMeeting(false);
-        setError('');
-        navigate(`/video-call/${newRoomId}`);
-      } else {
-        setError(result.message || 'Failed to deduct credits.');
-      }
-    } catch (err) {
-      console.error('Error creating meeting:', err);
-      setError('An error occurred while creating the meeting.');
+    if (result.success) {
+      // Make sure this constant is defined inside the 'if' block
+      const newRoomId = generateMeetingId(); 
+      
+      setIsCreatingMeeting(false);
+      setError('');
+      
+      // Now use it here
+      navigate(`/video-call/${newRoomId}`); 
+    } else {
+      setError(result.message || 'Failed to deduct credits.');
     }
-  };
+  } catch (err) {
+    console.error('Error creating meeting:', err);
+    setError('An error occurred while creating the meeting.');
+  }
+};
 
   const startCall = () => {
     if (roomId.trim()) {
