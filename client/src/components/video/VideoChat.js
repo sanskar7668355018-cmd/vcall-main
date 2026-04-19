@@ -118,3 +118,4 @@ const VideoChat = ({ video, audio, roomId: propRoomId, user: propUser }) => {
     </div>
   );
 };
+export default VideoChat;
