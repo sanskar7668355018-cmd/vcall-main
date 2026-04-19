@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useAuth } from "../../context/AuthContext";
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   Loader2,
@@ -75,8 +76,9 @@ const ParticipantsPanel = ({ onClose }) => {
 
 const livekitUrl = process.env.REACT_APP_LIVEKIT_URL;
 
-const VideoChat = ({ video, audio, user }) => {
+const VideoChat = ({ video, audio }) => {
   const { roomId } = useParams();
+  const { user } = useAuth();
   const [token, setToken] = useState("");
   const [showChat, setShowChat] = useState(false);
   const [showParticipants, setShowParticipants] = useState(false);
