@@ -70,7 +70,7 @@ const Dashboard = () => {
         setRoomId(newRoomId);
         setIsCreatingMeeting(false);
         setError('');
-        startCall();
+        setIsInCall(true);
       } else {
         setError(result.message || 'Failed to deduct credits.');
       }

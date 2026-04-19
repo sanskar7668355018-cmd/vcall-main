@@ -76,7 +76,7 @@ const ParticipantsPanel = ({ onClose }) => {
 
 const livekitUrl = process.env.REACT_APP_LIVEKIT_URL;
 
-const VideoChat = ({ video, audio }) => {
+const VideoChat = ({ video, audio,roomId: propRoomId, user: propUser }) => {
   const { roomId } = useParams();
   const { user } = useAuth();
   const [token, setToken] = useState("");
@@ -91,12 +91,19 @@ const VideoChat = ({ video, audio }) => {
   const navigate = useNavigate();
   //const API_URL = "https://vcall-2vlg.onrender.com";
   const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
+   const { roomId: urlRoomId } = useParams();
+    const { user: contextUser } = useAuth();
+    const activeRoomId = propRoomId || urlRoomId;
+    const activeUser = propUser || contextUser;
   useEffect(() => {
     console.log("VideoChat useEffect triggered");
-    console.log("Current user object:", user);
-    console.log("Current roomId:", roomId);
+    console.log("Active User Name:", activeUser?.name);
+    console.log("Active Room ID:", activeRoomId);
     
-    if (!user?.name || !roomId) return;
+   if (!activeUser?.name || !activeRoomId) {
+      console.log("Missing data, waiting...");
+      return;
+    }
 
     const authToken = localStorage.getItem("authToken");
 
@@ -104,7 +111,7 @@ const VideoChat = ({ video, audio }) => {
       try {
         //added a comma after the url string
         const resp = await axios.get(
-          `${API_URL}/api/livekit/token?roomName=${roomId}&participantName=${user.name}`,
+          `${API_URL}/api/livekit/token?roomName=${activeRoomId}&participantName=${activeUser.name}`,
           {
             headers: {
               Authorization: `Bearer ${authToken}`,
@@ -125,7 +132,7 @@ const VideoChat = ({ video, audio }) => {
         console.log("TOKEN FETCH ERROR:", e);
       }
     })();
-  }, [user?.name, roomId]);
+  }, [activeUser?.name, activeRoomId, API_URL]);
 
   const onLeave = () => {
     navigate('/');
