@@ -76,7 +76,7 @@ const ParticipantsPanel = ({ onClose }) => {
 
 const livekitUrl = process.env.REACT_APP_LIVEKIT_URL;
 
-const VideoChat = ({ video, audio,roomId: propRoomId, user: propUser }) => {
+const VideoChat = ({ video, audio, roomId: propRoomId, user: propUser }) => {
   const { roomId } = useParams();
   const { user } = useAuth();
   const [token, setToken] = useState("");
@@ -91,16 +91,16 @@ const VideoChat = ({ video, audio,roomId: propRoomId, user: propUser }) => {
   const navigate = useNavigate();
   //const API_URL = "https://vcall-2vlg.onrender.com";
   const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
-   const { roomId: urlRoomId } = useParams();
-    const { user: contextUser } = useAuth();
-    const activeRoomId = propRoomId || urlRoomId;
-    const activeUser = propUser || contextUser;
+  const { roomId: urlRoomId } = useParams();
+  const { user: contextUser } = useAuth();
+  const activeRoomId = propRoomId || urlRoomId;
+  const activeUser = propUser || contextUser;
   useEffect(() => {
     console.log("VideoChat useEffect triggered");
     console.log("Active User Name:", activeUser?.name);
     console.log("Active Room ID:", activeRoomId);
-    
-   if (!activeUser?.name || !activeRoomId) {
+
+    if (!activeUser?.name || !activeRoomId) {
       console.log("Missing data, waiting...");
       return;
     }
@@ -215,7 +215,7 @@ const VideoChat = ({ video, audio,roomId: propRoomId, user: propUser }) => {
   }
 
   return (
-    <div className="video-meeting-container">
+    <div className="video-meeting-container" style={{ height: '100vh', width: '100vw', backgroundColor: '#111',overflow:'hidden'}}>
       <LiveKitRoom
         data-lk-theme="default"
         serverUrl={livekitUrl}
@@ -225,164 +225,193 @@ const VideoChat = ({ video, audio,roomId: propRoomId, user: propUser }) => {
         audio={audio}
         className="video-chat-container"
         onDisconnected={onLeave}
+        style={{ height: '100%' }} // Ensure the room fills the 100vh div
       >
-        <div className={`video-chat-layout ${showChat || showParticipants ? 'chat-active' : ''}`}>
-          <div className="video-main-area">
-            <MyVideoConference />
-            <RoomAudioRenderer />
-          </div>
-
-          <div className={`chat-area ${showChat ? 'visible' : 'hidden'}`}>
-            <div className="chat-sidebar-header">
-              <h3>Chat</h3>
-              <button
-                className="close-chat-btn"
-                onClick={() => setShowChat(false)}
-              >
-                <X size={18} />
-              </button>
+        <div className={`video-chat-layout ${showChat || showParticipants ? 'chat-active' : ''}`} style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+          <div className="video-main-area" style={{
+            flex: 1,
+            position: 'relative',
+            overflow: 'hidden',
+            minHeight: 0,
+            display: 'flex',
+            flexDirection: 'row'
+          }}>
+            <div style={{ flex: 1, position: 'relative' }}>
+              <MyVideoConference />
+              <RoomAudioRenderer />
             </div>
-            <ChatComponent />
-          </div>
 
-          {showParticipants && !showChat && (
-            <ParticipantsPanel
-              onClose={() => setShowParticipants(false)}
-            />
-          )}
-
-          <div className="meeting-controls-area" style={{ position: "relative" }}>
-            <ControlBar
-              variation="minimal"
-              controls={{
-                microphone: true,
-                camera: true,
-                screenShare: true,
-                leave: true
-              }}
-            />
-
-            <button
+            <div className={`chat-area visible ${showChat ? 'visible' : 'hidden'}`}>
               style={{
-                position: "absolute",
-                bottom: "80px",
-                right: "20px",
-                zIndex: 9999,
-                background: "red",
-                color: "white",
-                padding: "10px 14px",
-                borderRadius: "10px",
-                border: "none",
-                cursor: "pointer"
+                width: showChat ? '350px' : '0px', // Animates or hides width
+                transition: 'width 0.3s ease',
+                display: showChat ? 'flex' : 'none', // Hides when not active
+                flexDirection: 'column',
+                backgroundColor: '#1e1e1e',
+                borderLeft: '1px solid #333',
+                height: '100%',
+                zIndex: 5
               }}
-              onClick={isRecording ? stopRecording : startRecording}
-            >
-              🎥 {isRecording ? "Stop" : "Record"}
-            </button>
+              <div className="chat-sidebar-header">
+                style={{
+                  padding: '15px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  borderBottom: '1px solid #333'
+                }}
+                <h3 style={{ margin: 0, color: 'white' }}>Chat</h3>
+                <button
+                  className="close-chat-btn"
+                  onClick={() => setShowChat(false)}
+                  style={{ background: 'none', border: 'none', color: '#999', cursor: 'pointer' }}
+                >
+                  <X size={18} />
+                </button>
+              </div>
+              <div style={{ flex: 1, overflowY: 'auto' }}>
+                <ChatComponent />
+              </div>
+            </div>
 
-            <button
-              className={`control-btn ${showChat ? 'active' : ''}`}
-              onClick={() => {
-                setShowChat(!showChat);
-                if (!showChat) setShowParticipants(false);
-              }}
-            >
-              <MessageSquare size={20} />
-              <span className="control-btn-label">Chat</span>
-            </button>
+            {showParticipants && !showChat && (
+              <div className="participants-sidebar" style={{
+                width: '350px',
+                backgroundColor: '#1e1e1e',
+                borderLeft: '1px solid #333',
+                height: '100%'
+              }}>
+                <ParticipantsPanel onClose={() => setShowParticipants(false)}/>
+                  </div>
+            )}
+            </div>
 
-            <button
-              className={`control-btn ${showParticipants ? 'active' : ''}`}
-              onClick={() => {
-                setShowParticipants(!showParticipants);
-                if (!showParticipants) setShowChat(false);
-              }}
-            >
-              <Users size={20} />
-              <span className="control-btn-label">Participants</span>
-            </button>
+                <div className="meeting-controls-area" style={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  gap: '15px',
+                  padding: '10px 20px',
+                  backgroundColor: 'rgba(0,0,0,0.9)',
+                  height: '80px',
+                  zIndex: 10,
+                  flexShrink: 0
+                }}>
+                  <ControlBar
+                    variation="minimal"
+                    controls={{
+                      microphone: true,
+                      camera: true,
+                      screenShare: true,
+                      leave: true
+                    }}
+                  />
 
-            <button
-              className={`control-btn ${isRecording ? 'active' : ''}`}
-              onClick={isRecording ? stopRecording : startRecording}
-            >
-              <span className="control-btn-label">
-                {isRecording ? "Stop Recording" : "Record"}
-              </span>
-            </button>
-          </div>
-        </div>
+                  <button
+                    className={`control-btn ${showChat ? 'active' : ''}`}
+                    onClick={() => {
+                      setShowChat(!showChat);
+                      if (!showChat) setShowParticipants(false);
+                    }}
+                  >
+                    <MessageSquare size={20} />
+                    <span className="control-btn-label">Chat</span>
+                  </button>
+
+                  <button
+                    className={`control-btn ${showParticipants ? 'active' : ''}`}
+                    onClick={() => {
+                      setShowParticipants(!showParticipants);
+                      if (!showParticipants) setShowChat(false);
+                    }}
+                  >
+                    <Users size={20} />
+                    <span className="control-btn-label">Participants</span>
+                  </button>
+
+                  <button
+                    className={`control-btn ${isRecording ? 'active' : ''}`}
+                    style={{ color: isRecording ? 'red' : 'white' }}
+                    onClick={isRecording ? stopRecording : startRecording}
+                  >
+                    <Video size={20} />
+                    <span className="control-btn-label">
+                      {isRecording ? "Stop Recording" : "Record"}
+                    </span>
+                  </button>
+                </div>
+              </div>
       </LiveKitRoom>
-    </div>
-  );
+        </div>
+        );
 };
 
-function MyVideoConference() {
+        function MyVideoConference() {
   const tracks = useTracks(
-    [
-      { source: Track.Source.Camera, withPlaceholder: true },
-      { source: Track.Source.ScreenShare, withPlaceholder: false },
-    ],
-    { onlySubscribed: false },
-  );
+        [
+        {source: Track.Source.Camera, withPlaceholder: true },
+        {source: Track.Source.ScreenShare, withPlaceholder: false },
+        ],
+        {onlySubscribed: false },
+        );
 
-  return (
-    <GridLayout tracks={tracks} className="video-grid-layout">
-      <ParticipantTile />
-    </GridLayout>
-  );
+        return (
+        <GridLayout tracks={tracks} className="video-grid-layout">
+          <ParticipantTile />
+        </GridLayout>
+        );
 }
 
 const ChatComponent = () => {
-  const { chatMessages, send, isSending } = useChat();
-  const [messageText, setMessageText] = useState('');
-  const messagesEndRef = useRef(null);
-  const room = useRoomContext();
-  const localParticipantIdentity = room.localParticipant.identity;
-  console.log("Local user identity:", localParticipantIdentity);
+  const {chatMessages, send, isSending} = useChat();
+        const [messageText, setMessageText] = useState('');
+        const messagesEndRef = useRef(null);
+        const room = useRoomContext();
+        const localParticipantIdentity = room.localParticipant.identity;
+        console.log("Local user identity:", localParticipantIdentity);
 
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+          messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages]);
 
   const handleSendMessage = (e) => {
-    e.preventDefault();
+          e.preventDefault();
 
-    if (messageText.trim() && !isSending) {
-      send(messageText);
-      setMessageText('');
+        if (messageText.trim() && !isSending) {
+          send(messageText);
+        setMessageText('');
     }
   };
 
-  return (
-    <div className="enhanced-chat-container">
-      <div className="chat-messages-wrapper">
-        <div className="chat-messages">
-          {chatMessages.map((msg, index) => (
-            <div key={index} className="message">
-              {msg.message}
+        return (
+        <div className="enhanced-chat-container">
+          <div className="chat-messages-wrapper">
+            <div className="chat-messages">
+              {chatMessages.map((msg, index) => (
+                <div key={index} className="message">
+                  {msg.message}
+                </div>
+              ))}
+              <div ref={messagesEndRef} />
             </div>
-          ))}
-          <div ref={messagesEndRef} />
-        </div>
-      </div>
+          </div>
 
-      <form onSubmit={handleSendMessage} className="chat-input-container">
-        <input
-          type="text"
-          value={messageText}
-          onChange={(e) => setMessageText(e.target.value)}
-          placeholder="Type a message..."
-          className="chat-input-field"
-          disabled={isSending}
-        />
-        <button type="submit" className="chat-send-button">
-          <Send size={16} />
-        </button>
-      </form>
-    </div>
-  );
+          <form onSubmit={handleSendMessage} className="chat-input-container">
+            <input
+              type="text"
+              value={messageText}
+              onChange={(e) => setMessageText(e.target.value)}
+              placeholder="Type a message..."
+              className="chat-input-field"
+              disabled={isSending}
+            />
+            <button type="submit" className="chat-send-button">
+              <Send size={16} />
+            </button>
+          </form>
+        </div>
+        );
 };
 
-export default VideoChat;
+        export default VideoChat;
