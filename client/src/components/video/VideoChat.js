@@ -90,6 +90,10 @@ const VideoChat = ({ video, audio, user }) => {
   //const API_URL = "https://vcall-2vlg.onrender.com";
   const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
   useEffect(() => {
+    console.log("VideoChat useEffect triggered");
+    console.log("Current user object:", user);
+    console.log("Current roomId:", roomId);
+    
     if (!user?.name || !roomId) return;
 
     const authToken = localStorage.getItem("authToken");
