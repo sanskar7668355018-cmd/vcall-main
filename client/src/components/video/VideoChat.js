@@ -116,7 +116,6 @@ function MyVideoConference() {
       </div>
     );
   }
-
   return (
     <div className="video-meeting-container" style={{ height: '100vh', width: '100vw', backgroundColor: '#111', overflow: 'hidden' }}>
       <LiveKitRoom
@@ -124,15 +123,30 @@ function MyVideoConference() {
         serverUrl={livekitUrl}
         token={token}
         connect={true}
-        video={video ?? true} // Fallback to true if undefined
+        video={video ?? true}
         audio={audio ?? true}
         className="video-chat-container"
         onDisconnected={onLeave}
         style={{ height: '100%' }}
       >
-        {/* ... Rest of your Layout JSX remains the same ... */}
+        {/* ✅ This is what was missing: The actual components that render video */}
+        <div className="video-chat-layout" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+          <div className="video-main-area" style={{ flex: 1, position: 'relative', display: 'flex' }}>
+            
+            {/* The component we defined earlier that uses useTracks */}
+            <MyVideoConference /> 
+            
+            <RoomAudioRenderer />
+          </div>
+          
+          {/* Controls like Mute/Unmute/Leave */}
+          <div className="controls-area" style={{ padding: '20px', display: 'flex', justifyContent: 'center' }}>
+            <ControlBar />
+          </div>
+        </div>
       </LiveKitRoom>
     </div>
   );
 };
+ 
 export default VideoChat;
