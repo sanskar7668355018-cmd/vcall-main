@@ -77,21 +77,34 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
-  const deductCredits = async () => {
+ const deductCredits = async () => {
     try {
-      const res = await axios.post(API_URL + "/api/payments/deduct", {})
-      if (res.data.success) {
-        setCredits(res.data.credits)
-        return { success: true, credits: res.data.credits }
+      // ✅ FIX: Get the token from state or localStorage
+      const activeToken = token || localStorage.getItem("authToken");
+
+      if (!activeToken) {
+        return { success: false, message: "No token, authorization denied" };
       }
-      return { success: false, message: res.data.message }
+
+      const res = await axios.post(API_URL + "/api/payments/deduct", {}, {
+        headers: {
+          Authorization: `Bearer ${activeToken}` // ✅ Manually add the token here
+        }
+      });
+
+      if (res.data.success) {
+        setCredits(res.data.credits);
+        return { success: true, credits: res.data.credits };
+      }
+      return { success: false, message: res.data.message };
     } catch (error) {
+      console.error("Deduct credits error:", error);
       return {
         success: false,
         message: error.response?.data?.message || "Failed to deduct credits"
-      }
+      };
     }
-  }
+  };
 
   const hasEnoughCredits = () => {
     return credits > 0
