@@ -89,6 +89,23 @@ const VideoChat = ({ video, audio, roomId: propRoomId, user: propUser }) => {
 
   // ... start/stop recording functions remain same ...
 
+  // This component is responsible for rendering the actual video grid
+function MyVideoConference() {
+  const tracks = useTracks(
+    [
+      { source: Track.Source.Camera, withPlaceholder: true },
+      { source: Track.Source.ScreenShare, withPlaceholder: false },
+    ],
+    { onlySubscribed: false } // Ensuring local tracks show up immediately
+  );
+
+  return (
+    <GridLayout tracks={tracks} style={{ height: '100%', width: '100%' }}>
+      <ParticipantTile />
+    </GridLayout>
+  );
+}
+
   // Loading Screen
   if (!token) {
     return (
