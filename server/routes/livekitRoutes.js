@@ -2,27 +2,27 @@ const { AccessToken } = require('livekit-server-sdk');
 const express = require('express');
 const router = express.Router();
 
-router.get('/', async (req, res) => {
+router.get('/token', async (req, res) => {
   try {
     console.log("LIVEKIT KEY:", process.env.LIVEKIT_API_KEY);
     console.log("LIVEKIT SECRET:", process.env.LIVEKIT_API_SECRET);
 
-    const { room, username } = req.query;
+    const { roomName, participantName } = req.query;
 
-    if (!room || !username) {
-      return res.status(400).json({ error: 'Room and username are required' });
+    if (!roomName || !participantName) {
+      return res.status(400).json({ error: 'roomName and participantName are required' });
     }
 
     const API_KEY = process.env.LIVEKIT_API_KEY;
     const API_SECRET = process.env.LIVEKIT_API_SECRET;
 
     const at = new AccessToken(API_KEY, API_SECRET, {
-      identity: username,
+      identity: participantName,
     });
 
     at.addGrant({
       roomJoin: true,
-      room,
+      room:roomName,
       canPublish: true,
       canSubscribe: true,
     });
