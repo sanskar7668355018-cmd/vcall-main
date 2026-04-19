@@ -31,17 +31,7 @@ export const AuthProvider = ({ children }) => {
   const [credits, setCredits] = useState(0)
   const [token, setToken] = useState(localStorage.getItem("authToken") || null)
 
-  useEffect(() => {
-    if (token) {
-      setupAxiosInterceptors(token);
-      localStorage.setItem("authToken", token);
-    } else {
-      setupAxiosInterceptors(null);
-      localStorage.removeItem("authToken");
-    }
-  }, [token]);
-
-  useEffect(() => {
+ useEffect(() => {
     const checkAuthStatus = async () => {
       try {
         if (!token) {
@@ -49,11 +39,16 @@ export const AuthProvider = ({ children }) => {
           return;
         }
 
-        const res = await axios.get(API_URL + "/api/auth/status")
+        // ✅ FIX: Manually pass the header here to ensure it's present
+        const res = await axios.get(API_URL + "/api/auth/status", {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        
         if (res.data.isAuthenticated) {
           setCurrentUser(res.data.user)
           setIsAuthenticated(true)
-          fetchCredits()
+          // ✅ FIX: Pass the token to fetchCredits
+          fetchCredits(token) 
         } else {
           setToken(null);
         }
@@ -68,9 +63,14 @@ export const AuthProvider = ({ children }) => {
     checkAuthStatus()
   }, [token])
 
-  const fetchCredits = async () => {
+  const fetchCredits = async (currentToken) => {
+    const activeToken = currentToken || token;
+    if (!activeToken) return 0;
+
     try {
-      const res = await axios.get(API_URL + "/api/payments/credits")
+      const res = await axios.get(API_URL + "/api/payments/credits", {
+        headers: { Authorization: `Bearer ${activeToken}` }
+      })
       setCredits(res.data.credits)
       return res.data.credits
     } catch (error) {
