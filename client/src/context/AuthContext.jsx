@@ -31,7 +31,7 @@ export const AuthProvider = ({ children }) => {
   const [credits, setCredits] = useState(0)
   const [token, setToken] = useState(localStorage.getItem("authToken") || null)
 
- useEffect(() => {
+  useEffect(() => {
     const checkAuthStatus = async () => {
       try {
         if (!token) {
@@ -43,12 +43,12 @@ export const AuthProvider = ({ children }) => {
         const res = await axios.get(API_URL + "/api/auth/status", {
           headers: { Authorization: `Bearer ${token}` }
         })
-        
+
         if (res.data.isAuthenticated) {
           setCurrentUser(res.data.user)
           setIsAuthenticated(true)
           // ✅ FIX: Pass the token to fetchCredits
-          fetchCredits(token) 
+          fetchCredits(token)
         } else {
           setToken(null);
         }
@@ -59,15 +59,13 @@ export const AuthProvider = ({ children }) => {
         setLoading(false)
       }
     }
-
     checkAuthStatus()
   }, [token])
 
   const fetchCredits = async (currentToken) => {
-    const activeToken = currentToken || token;
-    if (!activeToken) return 0;
-
     try {
+      const activeToken = currentToken || token;
+      if (!activeToken) return 0;
       const res = await axios.get(API_URL + "/api/payments/credits", {
         headers: { Authorization: `Bearer ${activeToken}` }
       })
@@ -101,11 +99,12 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const res = await axios.post(API_URL + "/api/auth/login", { email, password })
-      setToken(res.data.token)
-      setCurrentUser(res.data.user)
-      setIsAuthenticated(true)
-      await fetchCredits()
+      const res = await axios.post(API_URL + "/api/auth/login", { email, password });
+      const newToken = res.data.token; // Get the token from response
+      setToken(newToken); 
+      setCurrentUser(res.data.user);
+      setIsAuthenticated(true);
+      await fetchCredits(newToken);
       return { success: true }
     } catch (error) {
       return {
@@ -113,23 +112,31 @@ export const AuthProvider = ({ children }) => {
         message: error.response?.data?.message || "Login failed",
       }
     }
-  }
+  };
 
   const signup = async (name, email, password) => {
-    try {
-      const res = await axios.post(API_URL + "/api/auth/signup", { name, email, password })
-      setToken(res.data.token)
-      setCurrentUser(res.data.user)
-      setIsAuthenticated(true)
-      await fetchCredits()
-      return { success: true }
-    } catch (error) {
-      return {
-        success: false,
-        message: error.response?.data?.message || "Signup failed",
-      }
-    }
+  try {
+    const res = await axios.post(API_URL + "/api/auth/signup", { name, email, password });
+    
+    // 1. Extract the token immediately
+    const newToken = res.data.token; 
+    
+    // 2. Update state
+    setToken(newToken);
+    setCurrentUser(res.data.user);
+    setIsAuthenticated(true);
+    
+    // 3. Pass the NEW token directly to fetchCredits to avoid 401
+    await fetchCredits(newToken); 
+    
+    return { success: true };
+  } catch (error) {
+    return {
+      success: false,
+      message: error.response?.data?.message || "Signup failed",
+    };
   }
+};
 
   const logout = async () => {
     try {
