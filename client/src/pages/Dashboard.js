@@ -67,10 +67,9 @@ const Dashboard = () => {
 
       if (result.success) {
         const newRoomId = generateMeetingId();
-        setRoomId(newRoomId);
         setIsCreatingMeeting(false);
         setError('');
-        setIsInCall(true);
+        navigate(`/video-call/${newRoomId}`);
       } else {
         setError(result.message || 'Failed to deduct credits.');
       }
@@ -82,15 +81,7 @@ const Dashboard = () => {
 
   const startCall = () => {
     if (roomId.trim()) {
-      setIsInCall(true);
-      setMessages([
-        {
-          id: 1,
-          text: `Welcome to the meeting! Room ID: ${roomId}`,
-          type: 'system',
-          timestamp: new Date().toLocaleTimeString(),
-        },
-      ]);
+      navigate(`/video-call/${newRoomId.trim()}`);
     }
   };
 
@@ -250,38 +241,7 @@ const Dashboard = () => {
                 </div>
               )}
             </div>
-          ) : (
-            <div className="video-call-section">
-              <div className="meeting-info-bar">
-                <div className="meeting-details">
-                  <h3 className="meeting-room-id">Meeting: {roomId}</h3>
-                  <button
-                    className="copy-room-id"
-                    onClick={copyRoomId}
-                    title="Copy room ID"
-                  >
-                    {copied ? <Check size={16} /> : <Copy size={16} />}
-                  </button>
-                </div>
-                <div className="meeting-meta">
-                  <span className="participant-count">
-                    <Users size={16} className="icon-left" />
-                    {participants.length + 1}/{meetingSettings.maxParticipants}
-                  </span>
-                  {meetingSettings.title && <span className="meeting-title">{meetingSettings.title}</span>}
-                </div>
-              </div>
-
-              <div className="video-chat-wrapper">
-                <VideoChat
-                  roomId={roomId}
-                  video={!isVideoOff}
-                  audio={!isMuted}
-                  user={currentUser}
-                />
-              </div>
-            </div>
-          )}
+          ):null}
         </div>
       )}
     </div>
