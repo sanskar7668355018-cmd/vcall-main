@@ -3,7 +3,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import '../styles/Dashboard.css';
-import VideoChat from '../components/video/VideoChat';
 import Credits from '../components/credits/Credits';
 import {
   Video,
@@ -18,11 +17,9 @@ import {
 const Dashboard = () => {
   const { currentUser, hasEnoughCredits, deductCredits, credits, fetchCredits } = useAuth();
   const navigate = useNavigate();
+  
+  // Cleaned up unused state variables
   const [roomId, setRoomId] = useState('');
-  const [isMuted, setIsMuted] = useState(false);
-  const [isVideoOff, setIsVideoOff] = useState(false);
-  const [messages, setMessages] = useState([]);
-  const [participants, setParticipants] = useState([]);
   const [isCreatingMeeting, setIsCreatingMeeting] = useState(false);
   const [meetingSettings, setMeetingSettings] = useState({
     title: '',
@@ -30,8 +27,6 @@ const Dashboard = () => {
     maxParticipants: 10,
     isPrivate: false
   });
-  const [copied, setCopied] = useState(false);
-  const chatEndRef = useRef(null);
   const [showCredits, setShowCredits] = useState(false);
   const [error, setError] = useState('');
 
@@ -43,47 +38,39 @@ const Dashboard = () => {
     }
   }, [currentUser, navigate, fetchCredits]);
 
-  const scrollToBottom = () => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
   const generateMeetingId = () => {
     return Math.random().toString(36).substring(2, 8).toUpperCase();
   };
 
- const createMeeting = async () => {
-  // ... existing code ...
-  try {
-    const result = await deductCredits();
+  const createMeeting = async () => {
+    try {
+      const result = await deductCredits();
 
-    if (result.success) {
-      // Make sure this constant is defined inside the 'if' block
-      const newRoomId = generateMeetingId(); 
-      
-      setIsCreatingMeeting(false);
-      setError('');
-      
-      // Now use it here
-      navigate(`/video-call/${newRoomId}`); 
-    } else {
-      setError(result.message || 'Failed to deduct credits.');
-    }
-  } catch (err) {
-    console.error('Error creating meeting:', err);
-    setError('An error occurred while creating the meeting.');
-  }
-};
-
-  const startCall = () => {
-    if (roomId.trim()) {
-      navigate(`/video-call/${newRoomId.trim()}`);
+      if (result.success) {
+        // Correctly scoped variable
+        const newRoomId = generateMeetingId(); 
+        setIsCreatingMeeting(false);
+        setError('');
+        
+        // Navigate to dedicated video page
+        navigate(`/video-call/${newRoomId}`); 
+      } else {
+        setError(result.message || 'Failed to deduct credits.');
+      }
+    } catch (err) {
+      console.error('Error creating meeting:', err);
+      setError('An error occurred while creating the meeting.');
     }
   };
 
+  const startCall = () => {
+    if (roomId.trim()) {
+      // FIX: Changed newRoomId to roomId to use the input value
+      navigate(`/video-call/${roomId.trim()}`);
+    } else {
+      setError("Please enter a Room ID to join.");
+    }
+  };
 
   const handleMeetingSettingsChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -91,12 +78,6 @@ const Dashboard = () => {
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
-  };
-
-  const copyRoomId = () => {
-    navigator.clipboard.writeText(roomId);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
   };
 
   return (
@@ -126,121 +107,121 @@ const Dashboard = () => {
         </div>
       ) : (
         <div className="dashboard-content">
-          {!isInCall ? (
-            <div className="call-setup">
-              <h2>Start a Video Call</h2>
-              {error && <div className="error-message">{error}</div>}
-              {!isCreatingMeeting ? (
-                <div className="room-input">
-                  <input
-                    type="text"
-                    placeholder="Enter Room ID"
-                    value={roomId}
-                    onChange={(e) => setRoomId(e.target.value)}
-                    className="room-id-input"
-                  />
-                  <button onClick={startCall} className="btn btn-primary join-call-btn">
-                    <Video size={16} className="icon-left" />
-                    Join Call
-                  </button>
+          {/* REMOVED !isInCall ternary to fix "isInCall is not defined" error */}
+          <div className="call-setup">
+            <h2>Start a Video Call</h2>
+            {error && <div className="error-message">{error}</div>}
+            
+            {!isCreatingMeeting ? (
+              <div className="room-input">
+                <input
+                  type="text"
+                  placeholder="Enter Room ID"
+                  value={roomId}
+                  onChange={(e) => setRoomId(e.target.value)}
+                  className="room-id-input"
+                />
+                <button onClick={startCall} className="btn btn-primary join-call-btn">
+                  <Video size={16} className="icon-left" />
+                  Join Call
+                </button>
+                <button
+                  onClick={() => setIsCreatingMeeting(true)}
+                  className="btn btn-secondary create-meeting-btn"
+                  disabled={!hasEnoughCredits()}
+                  title={!hasEnoughCredits() ? "You need credits to create a meeting" : ""}
+                >
+                  <Plus size={16} className="icon-left" />
+                  Create New Meeting {hasEnoughCredits() ? "" : "(Need Credits)"}
+                </button>
+
+                <button
+                  onClick={() => setShowCredits(true)}
+                  className="btn btn-outline buy-credits-btn"
+                >
+                  <CreditCard size={16} className="icon-left" />
+                  Buy Credits
+                </button>
+              </div>
+            ) : (
+              <div className="create-meeting-container">
+                <h3 className="create-meeting-title">Create New Meeting</h3>
+                <div className="meeting-settings">
+                  <div className="form-group">
+                    <label htmlFor="title">Meeting Title</label>
+                    <input
+                      type="text"
+                      id="title"
+                      name="title"
+                      placeholder="Enter meeting title"
+                      value={meetingSettings.title}
+                      onChange={handleMeetingSettingsChange}
+                      className="form-control"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="description">Meeting Description</label>
+                    <textarea
+                      id="description"
+                      name="description"
+                      placeholder="Enter meeting description"
+                      value={meetingSettings.description}
+                      onChange={handleMeetingSettingsChange}
+                      className="form-control"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="maxParticipants">Maximum Participants</label>
+                    <input
+                      type="number"
+                      id="maxParticipants"
+                      name="maxParticipants"
+                      placeholder="Maximum participants"
+                      value={meetingSettings.maxParticipants}
+                      onChange={handleMeetingSettingsChange}
+                      min="2"
+                      max="50"
+                      className="form-control"
+                    />
+                  </div>
+
+                  <div className="form-group checkbox-group">
+                    <label htmlFor="isPrivate" className="checkbox-label">
+                      <input
+                        type="checkbox"
+                        id="isPrivate"
+                        name="isPrivate"
+                        checked={meetingSettings.isPrivate}
+                        onChange={handleMeetingSettingsChange}
+                        className="checkbox-input"
+                      />
+                      <span className="checkbox-text">Private Meeting</span>
+                    </label>
+                  </div>
+
+                  <div className="credit-info">
+                    <p>This will use 1 credit. Remaining: {credits}</p>
+                  </div>
+                </div>
+                <div className="meeting-action-buttons">
                   <button
-                    onClick={() => setIsCreatingMeeting(true)}
-                    className="btn btn-secondary create-meeting-btn"
+                    onClick={createMeeting}
+                    className="btn btn-primary create-btn"
                     disabled={!hasEnoughCredits()}
-                    title={!hasEnoughCredits() ? "You need credits to create a meeting" : ""}
                   >
-                    <Plus size={16} className="icon-left" />
-                    Create New Meeting {hasEnoughCredits() ? "" : "(Need Credits)"}
+                    <Video size={16} className="icon-left" />
+                    Create Meeting
                   </button>
-
-                  <button
-                    onClick={() => setShowCredits(true)}
-                    className="btn btn-outline buy-credits-btn"
-                  >
-                    <CreditCard size={16} className="icon-left" />
-                    Buy Credits
+                  <button onClick={() => setIsCreatingMeeting(false)} className="btn btn-secondary cancel-btn">
+                    <X size={16} className="icon-left" />
+                    Cancel
                   </button>
                 </div>
-              ) : (
-                <div className="create-meeting-container">
-                  <h3 className="create-meeting-title">Create New Meeting</h3>
-                  <div className="meeting-settings">
-                    <div className="form-group">
-                      <label htmlFor="title">Meeting Title</label>
-                      <input
-                        type="text"
-                        id="title"
-                        name="title"
-                        placeholder="Enter meeting title"
-                        value={meetingSettings.title}
-                        onChange={handleMeetingSettingsChange}
-                        className="form-control"
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label htmlFor="description">Meeting Description</label>
-                      <textarea
-                        id="description"
-                        name="description"
-                        placeholder="Enter meeting description"
-                        value={meetingSettings.description}
-                        onChange={handleMeetingSettingsChange}
-                        className="form-control"
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label htmlFor="maxParticipants">Maximum Participants</label>
-                      <input
-                        type="number"
-                        id="maxParticipants"
-                        name="maxParticipants"
-                        placeholder="Maximum participants"
-                        value={meetingSettings.maxParticipants}
-                        onChange={handleMeetingSettingsChange}
-                        min="2"
-                        max="50"
-                        className="form-control"
-                      />
-                    </div>
-
-                    <div className="form-group checkbox-group">
-                      <label htmlFor="isPrivate" className="checkbox-label">
-                        <input
-                          type="checkbox"
-                          id="isPrivate"
-                          name="isPrivate"
-                          checked={meetingSettings.isPrivate}
-                          onChange={handleMeetingSettingsChange}
-                          className="checkbox-input"
-                        />
-                        <span className="checkbox-text">Private Meeting</span>
-                      </label>
-                    </div>
-
-                    <div className="credit-info">
-                      <p>This will use 1 credit from your account. You have {credits} credits remaining.</p>
-                    </div>
-                  </div>
-                  <div className="meeting-action-buttons">
-                    <button
-                      onClick={createMeeting}
-                      className="btn btn-primary create-btn"
-                      disabled={!hasEnoughCredits()}
-                    >
-                      <Video size={16} className="icon-left" />
-                      Create Meeting
-                    </button>
-                    <button onClick={() => setIsCreatingMeeting(false)} className="btn btn-secondary cancel-btn">
-                      <X size={16} className="icon-left" />
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          ):null}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
