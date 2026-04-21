@@ -41,7 +41,7 @@ app.get("/", (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/livekit", livekitRoutes);
 app.use("/api/payments", paymentRoutes);
-app.use("/api/recording", recordingRoutes);
+app.use("/api/recordings", recordingRoutes);
 
 
 // ✅ 6. DATABASE CONNECTION
