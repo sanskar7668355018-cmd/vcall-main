@@ -83,6 +83,71 @@ const VideoChat = ({ video, audio, roomId: propRoomId, user: propUser }) => {
     fetchToken();
   }, [activeUser?.name, activeRoomId, API_URL]);
 
+  // --- RECORDING FUNCTIONALITY ---
+
+  const startRecording = async () => {
+    try {
+      // Capture the screen/window for recording
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: true,
+        audio: true,
+      });
+
+      recordedChunksRef.current = [];
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9' });
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          recordedChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+        saveRecording();
+        // Stop all tracks to turn off the "screen sharing" indicator
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      mediaRecorderRef.current = mediaRecorder;
+      mediaRecorder.start();
+      setIsRecording(true);
+    } catch (err) {
+      console.error("Error starting recording:", err);
+      alert("Failed to start recording. Please ensure you grant screen capture permissions.");
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+  };
+
+  const saveRecording = async () => {
+    const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
+    const formData = new FormData();
+    formData.append('video', blob, `recording-${activeRoomId}-${Date.now()}.webm`);
+    formData.append('roomId', activeRoomId);
+    formData.append('title', `Meeting at ${new Date().toLocaleString()}`);
+
+    try {
+      const authToken = localStorage.getItem("authToken");
+      await axios.post(`${API_URL}/api/recordings/upload`, formData, {
+        headers: { 
+          'Content-Type': 'multipart/form-data',
+          Authorization: `Bearer ${authToken}` 
+        }
+      });
+      alert("Recording saved successfully!");
+    } catch (err) {
+      console.error("Error uploading recording:", err);
+      alert("Recording captured but failed to save to server.");
+    }
+  };
+
+  // --- END RECORDING FUNCTIONALITY ---
+
   const onLeave = () => {
     navigate('/dashboard'); // Better to navigate to dashboard than home
   };
