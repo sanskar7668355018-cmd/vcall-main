@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const multer = require("multer");
 const Recording = require("../models/recording");
-const authMiddleware = require("../middleware/authMiddleware"); // ✅ Ensure this is imported
+const authMiddleware = require("../middleware/auth"); // ✅ Ensure this is imported
 
 // 📁 storage config
 const storage = multer.diskStorage({
