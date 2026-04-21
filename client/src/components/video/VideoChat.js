@@ -129,21 +129,21 @@ const VideoChat = ({ video, audio, roomId: propRoomId, user: propUser }) => {
     const formData = new FormData();
     formData.append('video', blob, `recording-${activeRoomId}-${Date.now()}.webm`);
     formData.append('roomId', activeRoomId);
-    formData.append('roomName',activeRoomId);
+    formData.append('roomName', activeRoomId); // ✅ ADD THIS
     formData.append('title', `Meeting at ${new Date().toLocaleString()}`);
 
     try {
       const authToken = localStorage.getItem("authToken");
-      await axios.post(`${API_URL}/api/recordings/upload`, formData, {
+      const response = await axios.post(`${API_URL}/api/recordings/upload`, formData, {
         headers: { 
           'Content-Type': 'multipart/form-data',
           Authorization: `Bearer ${authToken}` 
         }
       });
-      console.log("✅ Recording saved:", response.data);
+      console.log("✅ Recording saved:", response.data); // ✅ NOW 'response' is properly defined
       alert("Recording saved successfully!");
     } catch (err) {
-      console.error("Error uploading recording:", err);
+      console.error("❌ Error uploading recording:", err.response?.data || err.message);
       alert("Recording captured but failed to save to server.");
     }
   };
