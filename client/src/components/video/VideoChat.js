@@ -129,6 +129,7 @@ const VideoChat = ({ video, audio, roomId: propRoomId, user: propUser }) => {
     const formData = new FormData();
     formData.append('video', blob, `recording-${activeRoomId}-${Date.now()}.webm`);
     formData.append('roomId', activeRoomId);
+    formData.append('roomName',activeRoomId);
     formData.append('title', `Meeting at ${new Date().toLocaleString()}`);
 
     try {
@@ -139,6 +140,7 @@ const VideoChat = ({ video, audio, roomId: propRoomId, user: propUser }) => {
           Authorization: `Bearer ${authToken}` 
         }
       });
+      console.log("✅ Recording saved:", response.data);
       alert("Recording saved successfully!");
     } catch (err) {
       console.error("Error uploading recording:", err);
