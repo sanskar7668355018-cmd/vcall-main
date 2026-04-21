@@ -38,13 +38,13 @@ export default function Recordings() {
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(400px, 1fr))", gap: "20px", marginTop: "20px" }}>
           {data.map((rec) => (
-            <div key={rec._id} style={{ background: "#1a1a1a", padding: "15px", borderRadius: "12px", border: "1px solid #333" }}>
+            <div key={rec._id} style={{ background: "#fff", padding: "15px", borderRadius: "12px", border: "1px solid #eee" ,boxShadow: "0 4px 12px rgba(0,0,0,0.08)"}}>
               
               <p style={{ fontWeight: "bold", marginBottom: "10px" }}>
                 {rec.title || rec.roomName || "Unnamed Meeting"}
               </p>
 
-              <video width="100%" controls style={{ borderRadius: "8px", background: "black" }}>
+              <video width="100%" controls style={{ borderRadius: "8px", background: "#000" }}>
                 <source src={rec.fileUrl} type="video/webm" />
                 Your browser does not support the video tag.
               </video>
