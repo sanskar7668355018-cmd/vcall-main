@@ -182,7 +182,7 @@ function MyVideoConference() {
     );
   }
   return (
-    <div className="video-meeting-container" style={{ height: '100vh', width: '100vw', backgroundColor: '#111', overflow: 'hidden' }}>
+    <div className="video-meeting-container" style={{ height: '100vh', width: '100vw', backgroundColor: '#111', overflow: 'hidden', position:'relative'}}>
       <LiveKitRoom
         data-lk-theme="default"
         serverUrl={livekitUrl}
@@ -195,7 +195,46 @@ function MyVideoConference() {
         style={{ height: '100%' }}
       >
         {/* ✅ This is what was missing: The actual components that render video */}
-        <div className="video-chat-layout" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+        <div className="video-chat-layout" style={{ display: 'flex', flexDirection: 'column', height: '100%',position:'relative' }}>
+           {/* ✅ FIXED RECORDING BUTTON: Positioned Absolute with High Z-Index */}
+          <div style={{ 
+            position: 'absolute', 
+            top: '20px', 
+            right: '20px', 
+            zIndex: 999, // Ensures it stays on top of the video
+            display: 'flex',
+            gap: '10px'
+          }}>
+            <button 
+              onClick={isRecording ? stopRecording : startRecording}
+              style={{
+                backgroundColor: isRecording ? '#ef4444' : '#3b82f6',
+                color: 'white',
+                padding: '12px 24px',
+                borderRadius: '8px',
+                border: 'none',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+              }}
+            >
+              {isRecording && (
+                <span style={{ 
+                  width: '10px', 
+                  height: '10px', 
+                  backgroundColor: 'white', 
+                  borderRadius: '50%', 
+                  display: 'inline-block',
+                  animation: 'pulse 1s infinite'
+                }} />
+              )}
+              {isRecording ? "Stop Recording" : "Start Recording"}
+            </button>
+          </div>
+
           <div className="video-main-area" style={{ flex: 1, position: 'relative', display: 'flex' }}>
             
             {/* The component we defined earlier that uses useTracks */}
@@ -205,11 +244,19 @@ function MyVideoConference() {
           </div>
           
           {/* Controls like Mute/Unmute/Leave */}
-          <div className="controls-area" style={{ padding: '20px', display: 'flex', justifyContent: 'center' }}>
+          <div className="controls-area" style={{ padding: '20px', display: 'flex', justifyContent: 'center' ,backgroundColor:'#1a1a1a'}}>
             <ControlBar />
           </div>
         </div>
       </LiveKitRoom>
+       {/* Adding Pulse Animation for Recording Dot */}
+      <style>{`
+        @keyframes pulse {
+          0% { opacity: 1; }
+          50% { opacity: 0.3; }
+          100% { opacity: 1; }
+        }
+      `}</style>
     </div>
   );
 };
